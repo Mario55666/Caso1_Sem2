@@ -56,5 +56,3 @@ Docente: Mg. Mario Quiroz
 Año: 2026
 
 Este proyecto forma parte de las actividades de transformación digital para la enseñanza del diseño.
-
-¿Te gustaría que añada alguna sección técnica adicional sobre el funcionamiento de los hotspots o prefieres que ajustemos el tono de la biografía del autor?
