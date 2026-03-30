@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semiótica de la Imagen — Simulador Interactivo Nike</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════
+           RESET Y BASE
+           ═══════════════════════════════════════════ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; font-size: 16px; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        /* Textura sutil de fondo */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10000;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 200px;
+        }
+
+        /* ═══════════════════════════════════════════
+           VARIABLES DE DISEÑO
+           ═══════════════════════════════════════════ */
+        :root {
+            --bg: #F5F3EE;
+            --fg: #1A1A1A;
+            --muted: #78756F;
+            --accent: #E63946;
+            --accent-hover: #C1121F;
+            --accent-light: #FEF0F1;
+            --card: #FFFFFF;
+            --border: #E5E2DB;
+            --success: #1B8A4A;
+            --success-light: #E8F5EC;
+            --error: #D62839;
+            --error-light: #FDEAEC;
+            --radius: 14px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 6px 16px rgba(0,0,0,0.04);
+            --shadow-lg: 0 6px 16px rgba(0,0,0,0.07), 0 20px 48px rgba(0,0,0,0.06);
+            --max-w: 1140px;
+        }
+
+        /* ═══════════════════════════════════════════
+           TIPOGRAFÍA
+           ═══════════════════════════════════════════ */
+        h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 900; line-height: 1.15; }
+        h1 { font-size: clamp(2rem, 5vw, 3.2rem); }
+        h2 { font-size: clamp(1.5rem, 3.5vw, 2.2rem); }
+        h3 { font-size: clamp(1.1rem, 2vw, 1.35rem); font-weight: 700; }
+        p, li { color: var(--muted); }
+        strong { color: var(--fg); font-weight: 600; }
+        a { color: var(--accent); text-decoration: none; }
+
+        /* ═══════════════════════════════════════════
+           UTILIDADES DE LAYOUT
+           ═══════════════════════════════════════════ */
+        .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+        section { padding: 72px 0; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+        /* ═══════════════════════════════════════════
+           COMPONENTES
+           ═══════════════════════════════════════════ */
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            padding: 6px 16px;
+            border-radius: 100px;
+            text-transform: uppercase;
+        }
+
+        /* Card */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 28px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+        /* Botón primario */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent);
+            color: #fff;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .btn-primary:hover { background: var(--accent-hover); transform: scale(1.02); }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+        /* Botón secundario / ghost */
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            color: var(--fg);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .btn-ghost:hover { background: var(--card); border-color: var(--muted); }
+
+        /* Autor card */
+        .autor-card { border-left: 4px solid var(--accent); }
+        .autor-card .autor-nombre {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--fg);
+        }
+        .autor-card p { font-size: 0.92rem; }
+
+        /* Bloque de pregunta detonadora */
+        .detonadora {
+            background: var(--accent-light);
+            border-left: 5px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            padding: 28px 32px;
+            position: relative;
+        }
+        .detonadora .quote-mark {
+            position: absolute;
+            top: -8px;
+            left: 18px;
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            color: var(--accent);
+            opacity: 0.25;
+            line-height: 1;
+        }
+        .detonadora p { font-size: 1.05rem; color: var(--fg); font-style: italic; font-weight: 400; }
+
+        /* ═══════════════════════════════════════════
+           HEADER
+           ═══════════════════════════════════════════ */
+        .site-header {
+            border-bottom: 1px solid var(--border);
+            background: rgba(245, 243, 238, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 500;
+        }
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 18px 0;
+        }
+        .header-left { flex: 1; min-width: 240px; }
+        .header-left .badge { margin-bottom: 10px; }
+        .header-left h1 { font-size: clamp(1.4rem, 3vw, 1.9rem); }
+
+        /* ═══════════════════════════════════════════
+           OBJETIVO
+           ═══════════════════════════════════════════ */
+        .objetivo-block {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .objetivo-block svg { flex-shrink: 0; margin-top: 2px; }
+        .objetivo-block p { font-size: 0.95rem; color: var(--fg); font-weight: 400; }
+
+        /* ═══════════════════════════════════════════
+           COMPARACIÓN DUAL (STAGE + HOTSPOTS)
+           ═══════════════════════════════════════════ */
+        .comp-label {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 100px;
+            margin-bottom: 14px;
+        }
+        .comp-label.denotativo { background: #E8F0FE; color: #1A56DB; }
+        .comp-label.connotativo { background: var(--accent-light); color: var(--accent); }
+
+        .stage {
+            position: relative;
+            width: 100%;
+        }
+        .stage-img-wrap {
+            width: 100%;
+            overflow: hidden;
+            border-radius: var(--radius);
+            background: #EAE8E3;
+        }
+        .stage-img-wrap img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+        .stage:hover .stage-img-wrap img { transform: scale(1.03); }
+
+        /* Hotspots (fuera de .stage-img-wrap, z-index:100) */
+        .hotspot {
+            position: absolute;
+            z-index: 100;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 3px solid #fff;
+            box-shadow: 0 2px 8px rgba(230,57,70,0.4);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hotspot::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+        }
+        .hotspot::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            animation: hotspotPulse 2s ease-out infinite;
+        }
+        .hotspot:hover { transform: scale(1.25); box-shadow: 0 4px 16px rgba(230,57,70,0.5); }
+        .hotspot:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+
+        @keyframes hotspotPulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        /* Tooltip global */
+        #g-tip {
+            position: fixed;
+            z-index: 9999;
+            background: var(--fg);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 10px;
+            max-width: 320px;
+            min-width: 200px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+        #g-tip.visible { opacity: 1; }
+        #g-tip strong {
+            display: block;
+            color: var(--accent);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        #g-tip p { color: rgba(255,255,255,0.88); margin: 0; font-size: 0.85rem; }
+
+        /* ═══════════════════════════════════════════
+           GRÁFICO DE BARRAS CSS
+           ═══════════════════════════════════════════ */
+        .chart-container { max-width: 640px; margin: 0 auto; }
+        .chart-group { margin-bottom: 36px; }
+        .chart-group-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--fg);
+            margin-bottom: 14px;
+        }
+        .chart-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 10px;
+        }
+        .chart-label {
+            width: 170px;
+            flex-shrink: 0;
+            font-size: 0.82rem;
+            color: var(--muted);
+            text-align: right;
+            font-weight: 500;
+        }
+        .chart-track {
+            flex: 1;
+            height: 32px;
+            background: #EAE8E3;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        .chart-bar {
+            height: 100%;
+            border-radius: 8px;
+            width: 0;
+            transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #fff;
+            min-width: 0;
+        }
+        .chart-bar.den { background: linear-gradient(90deg, #1A56DB, #3B82F6); }
+        .chart-bar.con { background: linear-gradient(90deg, #C1121F, var(--accent)); }
+        .chart-bar.animate { /* width set via inline style */ }
+        .chart-legend {
+            display: flex;
+            gap: 28px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+        .chart-legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+
+        /* ═══════════════════════════════════════════
+           CUESTIONARIO
+           ═══════════════════════════════════════════ */
+        .quiz-question {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        .quiz-question.answered-correct { border-color: var(--success); }
+        .quiz-question.answered-wrong { border-color: var(--error); }
+        .quiz-q-text {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--fg);
+            margin-bottom: 18px;
+            display: flex;
+            gap: 10px;
+        }
+        .quiz-q-num {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            background: var(--accent-light);
+            color: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+        .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+        .quiz-opt {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            font-size: 0.92rem;
+            color: var(--muted);
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .quiz-opt:hover:not(:disabled) { background: #F8F7F4; border-color: var(--muted); }
+        .quiz-opt:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+        .quiz-opt .opt-letter {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .quiz-opt.correct {
+            background: var(--success-light);
+            border-color: var(--success);
+            color: var(--success);
+        }
+        .quiz-opt.correct .opt-letter {
+            background: var(--success);
+            border-color: var(--success);
+            color: #fff;
+        }
+        .quiz-opt.wrong {
+            background: var(--error-light);
+            border-color: var(--error);
+            color: var(--error);
+        }
+        .quiz-opt.wrong .opt-letter {
+            background: var(--error);
+            border-color: var(--error);
+            color: #fff;
+        }
+        .quiz-opt:disabled { cursor: default; opacity: 0.7; }
+        .quiz-opt.correct:disabled, .quiz-opt.wrong:disabled { opacity: 1; }
+        .quiz-feedback {
+            margin-top: 14px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            display: none;
+            animation: fadeSlideIn 0.3s ease;
+        }
+        .quiz-feedback.show { display: block; }
+        .quiz-feedback.correct-fb { background: var(--success-light); color: var(--success); }
+        .quiz-feedback.wrong-fb { background: var(--error-light); color: var(--error); }
+
+        /* Score */
+        .score-block {
+            text-align: center;
+            padding: 32px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-top: 28px;
+            display: none;
+        }
+        .score-block.show { display: block; animation: fadeSlideIn 0.4s ease; }
+        .score-number {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        /* ═══════════════════════════════════════════
+           FORMULARIO DE REFLEXIÓN
+           ═══════════════════════════════════════════ */
+        .form-group { margin-bottom: 20px; }
+        .form-label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 8px;
+        }
+        .form-label .req { color: var(--accent); }
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.92rem;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--card);
+            color: var(--fg);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .form-input:focus, .form-textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(230,57,70,0.12);
+        }
+        .form-input.error, .form-textarea.error { border-color: var(--error); }
+        .form-textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+        .form-error {
+            font-size: 0.8rem;
+            color: var(--error);
+            margin-top: 6px;
+            display: none;
+        }
+        .form-error.show { display: block; animation: fadeSlideIn 0.2s ease; }
+
+        /* ═══════════════════════════════════════════
+           TOAST
+           ═══════════════════════════════════════════ */
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: var(--fg);
+            color: #fff;
+            padding: 16px 28px;
+            border-radius: 12px;
+            font-size: 0.92rem;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ═══════════════════════════════════════════
+           FOOTER
+           ═══════════════════════════════════════════ */
+        .site-footer {
+            border-top: 1px solid var(--border);
+            padding: 28px 0;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        /* ═══════════════════════════════════════════
+           ANIMACIONES
+           ═══════════════════════════════════════════ */
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .reveal {
+            opacity: 0;
+            transform: translateY(32px);
+            transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal.d1 { transition-delay: 0.1s; }
+        .reveal.d2 { transition-delay: 0.2s; }
+        .reveal.d3 { transition-delay: 0.3s; }
+        .reveal.d4 { transition-delay: 0.4s; }
+
+        /* Línea decorativa animada */
+        .accent-line {
+            width: 48px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 2px;
+            margin-bottom: 18px;
+        }
+
+        /* ═══════════════════════════════════════════
+           @media print
+           ═══════════════════════════════════════════ */
+        @media print {
+            .no-print, .hotspot, #g-tip, .toast, .btn-primary, .btn-ghost,
+            .quiz-opt, .quiz-feedback, .score-block, .form-error { display: none !important; }
+            body { background: #fff !important; color: #000 !important; }
+            body::after { display: none !important; }
+            .site-header {
+                position: static !important;
+                background: #fff !important;
+                backdrop-filter: none !important;
+                border-bottom: 2px solid #000 !important;
+            }
+            .card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+            .detonadora { background: #f5f5f5 !important; }
+            section { padding: 32px 0 !important; }
+            .stage:hover .stage-img-wrap img { transform: none !important; }
+            .chart-bar { transition: none !important; }
+            p, li { color: #333 !important; }
+            strong { color: #000 !important; }
+            .form-input, .form-textarea {
+                border: 1px solid #999 !important;
+                box-shadow: none !important;
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════════ */
+        @media (max-width: 900px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 600px) {
+            section { padding: 48px 0; }
+            .container { padding: 0 16px; }
+            .grid-4 { grid-template-columns: 1fr; }
+            .header-inner { flex-direction: column; align-items: flex-start; }
+            .chart-label { width: 120px; font-size: 0.75rem; }
+            .detonadora { padding: 20px 18px; }
+            .quiz-question { padding: 20px; }
+        }
+
+        /* Respeta prefers-reduced-motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+            .reveal { opacity: 1; transform: none; }
+            .hotspot::after { animation: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════
+         TOOLTIP GLOBAL (creado UNA vez en body)
+         ═══════════════════════════════════════════ -->
+    <div id="g-tip" role="tooltip" aria-hidden="true">
+        <strong></strong>
+        <p></p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TOAST DE NOTIFICACIÓN
+         ═══════════════════════════════════════════ -->
+    <div class="toast" id="toast" role="status" aria-live="polite">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#1B8A4A"/><path d="M6 10.5l2.5 2.5L14 7.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="toast-msg">Mensaje</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         HEADER
+         ═══════════════════════════════════════════ -->
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="header-left">
+                <div class="badge">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.76 3.57 3.94.57-2.85 2.78.67 3.93L7 10.08l-3.52 1.85.67-3.93L1.3 5.14l3.94-.57L7 1z" fill="#fff"/></svg>
+                    Actividad de Transformación - Tipo Comparativa Interactiva
+                </div>
+                <h1>Semiótica de la Imagen</h1>
+            </div>
+            <button class="btn-ghost no-print" onclick="window.print()" aria-label="Imprimir documento en PDF">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v3h10v-3M4 10h10M6 2h6v5H6zM4 10a2 2 0 110-4h10a2 2 0 110 4"/></svg>
+                Imprimir PDF
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- ═══════════════════════════════════════════
+             OBJETIVO
+             ═══════════════════════════════════════════ -->
+        <section style="padding-bottom: 0;">
+            <div class="container">
+                <div class="objetivo-block reveal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    <p>Comprender cómo los sistemas de signos visuales (color, tipografía, composición, imágenes) construyen significados diferentes a partir de información idéntica, desarrollando pensamiento crítico sobre la naturaleza mediatizada de la realidad comunicativa.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════
+             CASO DE ESTUDIO — MARCO TEÓRICO
+             ═══════════════════════════════════════════ -->
+        <section>
+            <div class="container">
+                <div class="accent-line reveal"></div>
+                <h2 class="reveal">Caso Nike: "Just Do It" + Swoosh (1988-presente) y "So Win" (2025)</h2>
+                <p class="reveal" style="max-width: 720px; margin-top: 12px;">
+                    Este caso condensa las lecturas de Saussure, Peirce, Eco y Blanco y Bueno en un solo sistema de significación. Desde el nacimiento del eslogan "Just Do It" hasta el spot "So Win" con Sha'Carri Richardson (Super Bowl LIX, Premio Super Clio), Nike demuestra que un signo puede operar sin mostrar el producto que supuestamente vende.
+                </p>
+
+                <!-- Tarjetas de autores -->
+                <div class="grid-4" style="margin-top: 36px;">
+                    <div class="card autor-card reveal d1">
+                        <div class="autor-nombre">Ferdinand de Saussure</div>
+                        <p>El swoosh vive en <strong>"la vida social"</strong>: no tiene significado fuera de la comunidad que lo usa. En África, Asia o cualquier lugar del mundo, se decodifica de inmediato porque existe en el contrato social del lenguaje publicitario global.</p>
+                    </div>
+                    <div class="card autor-card reveal d2">
+                        <div class="autor-nombre">Charles S. Peirce</div>
+                        <p>El swoosh es <strong>símbolo</strong> puro (relación arbitraria por convención). "Just Do It" es signo lingüístico verbal. Las atletas en "So Win" funcionan como <strong>íconos</strong>. El silencio inicial del spot es un <strong>índice</strong> de tensión.</p>
+                    </div>
+                    <div class="card autor-card reveal d3">
+                        <div class="autor-nombre">Umberto Eco</div>
+                        <p>En "So Win", <strong>todo puede considerarse signo</strong>: el color rojo del traje, la ausencia de producto durante 27 años de campaña, la tipografía, el silencio. No hay elementos neutros; cada elección es significante.</p>
+                    </div>
+                    <div class="card autor-card reveal d4">
+                        <div class="autor-nombre">Blanco y Bueno</div>
+                        <p>Nike es un <strong>sistema de significación completo</strong> donde swoosh + color + forma + eslogan + atletas construyen un universo de sentido que excede al producto. Intervienen género, raza y deporte como ejes de significación.</p>
+                    </div>
+                </div>
+
+                <!-- Preguntas detonadoras -->
+                <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 20px;">
+                    <div class="detonadora reveal">
+                        <span class="quote-mark">"</span>
+                        <p>Nike no mostró ningún producto en el spot "So Win". Solo el swoosh al final. ¿Cómo funciona semióticamente un anuncio que no muestra lo que vende?</p>
+                    </div>
+                    <div class="detonadora reveal" style="background: #F0EDE6; border-left-color: var(--muted);">
+                        <span class="quote-mark" style="color: var(--muted);">"</span>
+                        <p>¿Qué pasaría si mañana Nike vendiera el swoosh a una empresa de seguros? ¿El signo sería el mismo?</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════
+             COMPARACIÓN DUAL
+             ═══════════════════════════════════════════ -->
+        <section style="background: var(--card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+            <div class="container">
+                <div class="accent-line reveal"></div>
+                <h2 class="reveal">Comparación Visual: Denotación vs. Connotación</h2>
+                <p class="reveal" style="margin-top: 10px; max-width: 640px;">Explora los hotspots interactivos sobre cada imagen para descubrir cómo los mismos elementos funcionan de manera radicalmente distinta según el nivel de análisis.</p>
+
+                <div class="grid-2" style="margin-top: 36px;">
+                    <!-- COLUMNA IZQUIERDA: Denotativo -->
+                    <div class="reveal d1">
+                        <span class="comp-label denotativo">Nivel Denotativo</span>
+                        <p style="font-size: 0.85rem; margin-bottom: 14px;">Anuncio de producto: venta directa de zapatillas deportivas. La imagen describe lo que se ve.</p>
+                        <div class="stage" aria-label="Zona interactiva del anuncio denotativo">
+                            <div class="stage-img-wrap">
+                                <img src="https://z-cdn-media.chatglm.cn/files/fe3a8f24-ec75-46ce-91a5-ec92accc5d02.png?auth_key=1874813317-cccb4c1f968149b7b93b72a26a0d45d1-0-29e02f55b208d67c2d94b017c5e3334d" alt="Zapatilla Nike con gradiente amarillo-rosa y suela con tacos, fondo blanco" loading="lazy">
+                            </div>
+                            <!-- Hotspots fuera del contenedor de imagen -->
+                            <button class="hotspot no-print" style="top: 35%; left: 56%;" data-title="Swoosh como logotipo" data-desc="Nivel denotativo: una marca registrada impresa en el lateral de la zapatilla. Su función es identificar al fabricante. No hay connotación emocional, solo referencia comercial directa." aria-label="Hotspot: Swoosh como logotipo" tabindex="0"></button>
+                            <button class="hotspot no-print" style="top: 22%; left: 42%;" data-title="Gradiente de color" data-desc="Nivel denotativo: transición visual de amarillo a rosa en el material superior. Describe una propiedad física del producto (color del textil) sin atribuirle significado simbólico." aria-label="Hotspot: Gradiente de color" tabindex="0"></button>
+                            <button class="hotspot no-print" style="top: 78%; left: 48%;" data-title="Tacos de la suela" data-desc="Nivel denotativo: elementos de tracción en la parte inferior de la zapatilla. Indican función técnica para superficie de césped o pista. Descripción puramente funcional." aria-label="Hotspot: tacos de suela" tabindex="0"></button>
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA: Connotativo -->
+                    <div class="reveal d2">
+                        <span class="comp-label connotativo">Nivel Connotativo</span>
+                        <p style="font-size: 0.85rem; margin-bottom: 14px;">Campaña "So Win": Sha'Carri Richardson. La imagen evoca ideas, emociones y valores culturales.</p>
+                        <div class="stage" aria-label="Zona interactiva del anuncio connotativo">
+                            <div class="stage-img-wrap">
+                                <img src="https://z-cdn-media.chatglm.cn/files/4201d8a1-aab5-4fd7-b88b-5324e5caf5b5.jpg?auth_key=1874813317-5789fb57c8f6438ea4bda5318bc217b2-0-37ecf07e1add37ad21e14ffb798e191b" alt="Campaña Nike So Win con Sha'Carri Richardson en traje rojo, texto YOU CAN'T WIN SO WIN" loading="lazy">
+                            </div>
+                            <!-- Hotspots fuera del contenedor de imagen -->
+                            <button class="hotspot no-print" style="top: 7%; left: 42%;" data-title="Eslogan: Signo simbólico (Peirce)" data-desc="'YOU CAN'T WIN. SO WIN.' opera como símbolo puro: la relación entre la frase y la idea de resistencia no es natural, es convencional. El oxímoron genera tensión semiótica que captura la atención." aria-label="Hotspot: Eslogan" tabindex="0"></button>
+                            <button class="hotspot no-print" style="top: 28%; left: 52%;" data-title="Cita como índice de autenticidad" data-desc="La cita de Sha'Carri funciona como índice (Peirce): hay una conexión existencial entre la atleta y sus palabras. No es cualquier frase, es evidencia de una experiencia vivida. Eco diría: el silencio que rodea la cita también es signo." aria-label="Hotspot: Cita de Sha'Carri" tabindex="0"></button>
+                            <button class="hotspot no-print" style="top: 54%; left: 40%;" data-title="Sha'Carri como ícono + sistema (Blanco y Bueno)" data-desc="Su imagen no es solo representación (ícono en Peirce), sino parte de un sistema donde raza + género + deporte + estética construyen un universo de sentido. El rojo del traje no es solo color, es connotación de poder y audacia." aria-label="Hotspot: Sha'Carri Richardson" tabindex="0"></button>
+                            <button class="hotspot no-print" style="top: 89%; left: 8%;" data-title="Swoosh en la vida social (Saussure)" data-desc="Aparece solo al final. No necesita el producto porque el swoosh ya vive en 'la vida social' de la audiencia (Saussure). Su ausencia durante todo el spot es tan significante como su presencia final: Eco confirmaría que la ausencia también es signo." aria-label="Hotspot: Swoosh final" tabindex="0"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════
+             GRÁFICO DE EFICACIA (CSS puro)
+             ═══════════════════════════════════════════ -->
+        <section>
+            <div class="container">
+                <div class="accent-line reveal"></div>
+                <h2 class="reveal">Eficacia Comunicativa: Dos Estrategias, Dos Resultados</h2>
+                <p class="reveal" style="margin-top: 10px; max-width: 600px;">¿Qué construye más significado? Los datos reflejan cómo la connotación genera conexiones más profundas que la descripción literal del producto.</p>
+
+                <div class="chart-container reveal" id="chart-area" style="margin-top: 36px;">
+                    <!-- Grupo 1: Denotativo -->
+                    <div class="chart-group">
+                        <div class="chart-group-title">Anuncio Denotativo (Zapatilla)</div>
+                        <div class="chart-row">
+                            <span class="chart-label">Atributos del producto</span>
+                            <div class="chart-track">
+                                <div class="chart-bar den" data-width="88%">88%</div>
+                            </div>
+                        </div>
+                        <div class="chart-row">
+                            <span class="chart-label">Conexión emocional</span>
+                            <div class="chart-track">
+                                <div class="chart-bar den" data-width="22%">22%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Grupo 2: Connotativo -->
+                    <div class="chart-group">
+                        <div class="chart-group-title">Anuncio Connotativo ("So Win")</div>
+                        <div class="chart-row">
+                            <span class="chart-label">Atributos del producto</span>
+                            <div class="chart-track">
+                                <div class="chart-bar con" data-width="12%">12%</div>
+                            </div>
+                        </div>
+                        <div class="chart-row">
+                            <span class="chart-label">Conexión emocional</span>
+                            <div class="chart-track">
+                                <div class="chart-bar con" data-width="94%">94%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="chart-legend-item">
+                            <span class="chart-legend-dot" style="background: #1A56DB;"></span>
+                            Denotativo
+                        </div>
+                        <div class="chart-legend-item">
+                            <span class="chart-legend-dot" style="background: var(--accent);"></span>
+                            Connotativo
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════
+             CUESTIONARIO (5 preguntas)
+             ═══════════════════════════════════════════ -->
+        <section style="background: var(--card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+            <div class="container">
+                <div class="accent-line reveal"></div>
+                <h2 class="reveal">Cuestionario de Evaluación</h2>
+                <p class="reveal" style="margin-top: 10px;">Selecciona la respuesta correcta en cada pregunta. Recibirás retroalimentación inmediata.</p>
+
+                <div style="margin-top: 32px;" id="quiz-container">
+
+                    <!-- Pregunta 1 -->
+                    <div class="quiz-question reveal" data-correct="1">
+                        <div class="quiz-q-text">
+                            <span class="quiz-q-num">1</span>
+                            <span>Según Saussure, ¿por qué el swoosh de Nike es reconocido globalmente, incluso en culturas donde no se practica el deporte que representa?</span>
+                        </div>
+                        <div class="quiz-options">
+                            <button class="quiz-opt" data-idx="0"><span class="opt-letter">A</span> Porque su forma imita naturalmente el movimiento y la velocidad</button>
+                            <button class="quiz-opt" data-idx="1"><span class="opt-letter">B</span> Porque existe en "la vida social" de la comunidad que lo usa, independiente de su referente real</button>
+                            <button class="quiz-opt" data-idx="2"><span class="opt-letter">C</span> Porque Nike traduce el significado del logo a cada idioma local</button>
+                            <button class="quiz-opt" data-idx="3"><span class="opt-letter">D</span> Porque el swoosh tiene un significado denotativo universalmente comprensible</button>
+                        </div>
+                        <div class="quiz-feedback correct-fb">Correcto. Saussure sostiene que el signo vive en "la vida social": su valor no depende del referente (el deporte) sino del sistema de relaciones dentro de la comunidad lingüística que lo usa.</div>
+                        <div class="quiz-feedback wrong-fb">Incorrecto. La clave es Saussure: el signo existe en "la vida social", no por su forma natural ni por traducción. El valor del signo viene del sistema, no del referente.</div>
+                    </div>
+
+                    <!-- Pregunta 2 -->
+                    <div class="quiz-question reveal" data-correct="2">
+                        <div class="quiz-q-text">
+                            <span class="quiz-q-num">2</span>
+                            <span>En la tipología de Peirce, ¿cómo se clasifica el eslogan "Just Do It"?</span>
+                        </div>
+                        <div class="quiz-options">
+                            <button class="quiz-opt" data-idx="0"><span class="opt-letter">A</span> Ícono, porque evoca mentalmente la acción de hacer deporte</button>
+                            <button class="quiz-opt" data-idx="1"><span class="opt-letter">B</span> Índice, porque señala necesariamente hacia un producto deportivo</button>
+                            <button class="quiz-opt" data-idx="2"><span class="opt-letter">C</span> Símbolo, porque la relación entre la frase y su significado es arbitraria y convencional</button>
+                            <button class="quiz-opt" data-idx="3"><span class="opt-letter">D</span> Signo natural, porque la motivación es evidente para cualquier hablante</button>
+                        </div>
+                        <div class="quiz-feedback correct-fb">Correcto. Para Peirce, el símbolo se define por la convención arbitraria: no hay relación natural entre "Just Do It" y la idea de superación, sino un pacto cultural que asigna ese significado.</div>
+                        <div class="quiz-feedback wrong-fb">Incorrecto. Peirce clasifica "Just Do It" como símbolo: la relación entre el significante y el significado no es natural (ícono) ni existencial (índice), sino arbitraria y convencional.</div>
+                    </div>
+
+                    <!-- Pregunta 3 -->
+                    <div class="quiz-question reveal" data-correct="0">
+                        <div class="quiz-q-text">
+                            <span class="quiz-q-num">3</span>
+                            <span>Según Umberto Eco, en el spot "So Win", ¿cuál de estas afirmaciones es más precisa?</span>
+                        </div>
+                        <div class="quiz-options">
+                            <button class="quiz-opt" data-idx="0"><span class="opt-letter">A</span> Todo puede considerarse signo: el color rojo, el silencio, la tipografía, la ausencia de producto</button>
+                            <button class="quiz-opt" data-idx="1"><span class="opt-letter">B</span> Solo funcionan como signo los elementos intencionales diseñados por la marca</button>
+                            <button class="quiz-opt" data-idx="2"><span class="opt-letter">C</span> El texto es el único signo verdadero; lo visual es decoración</button>
+                            <button class="quiz-opt" data-idx="3"><span class="opt-letter">D</span> Los signos solo operan cuando el receptor tiene formación en semiótica</button>
+                        </div>
+                        <div class="quiz-feedback correct-fb">Correcto. Eco radicaliza la noción de signo: "todo puede considerarse signo" según los códigos que el destinatario activa. El silencio, la ausencia, el color, la tipografía: nada es neutral en la lectura ecoana.</div>
+                        <div class="quiz-feedback wrong-fb">Incorrecto. Para Eco, la noción de signo es radicalmente amplia: todo puede funcionar como signo según los códigos activados por el destinatario, incluyendo silencios, ausencias y colores.</div>
+                    </div>
+
+                    <!-- Pregunta 4 -->
+                    <div class="quiz-question reveal" data-correct="1">
+                        <div class="quiz-q-text">
+                            <span class="quiz-q-num">4</span>
+                            <span>Desde la perspectiva de Blanco y Bueno, el swoosh de Nike debe analizarse como:</span>
+                        </div>
+                        <div class="quiz-options">
+                            <button class="quiz-opt" data-idx="0"><span class="opt-letter">A</span> Un logotipo aislado cuyo significado se agota en la identificación de marca</button>
+                            <button class="quiz-opt" data-idx="1"><span class="opt-letter">B</span> Parte de un sistema de significación donde color + forma + eslogan + atletas construyen un universo de sentido</button>
+                            <button class="quiz-opt" data-idx="2"><span class="opt-letter">C</span> Un signo puramente denotativo sin carga ideológica</button>
+                            <button class="quiz-opt" data-idx="3"><span class="opt-letter">D</span> Un índice directo de la calidad técnica del producto</button>
+                        </div>
+                        <div class="quiz-feedback correct-fb">Correcto. Blanco y Bueno proponen analizar los signos como sistemas de significación que exceden al producto. El swoosh no opera solo: interactúa con el color, la tipografía, los atletas, construyendo un sistema completo donde género, raza y deporte son ejes de sentido.</div>
+                        <div class="quiz-feedback wrong-fb">Incorrecto. Blanco y Bueno insisten en que el signo debe leerse como parte de un sistema de significación más amplio. El swoosh no es un logotipo aislado ni un índice de calidad; es parte de un universo de sentido que excede al producto.</div>
+                    </div>
+
+                    <!-- Pregunta 5 -->
+                    <div class="quiz-question reveal" data-correct="2">
+                        <div class="quiz-q-text">
+                            <span class="quiz-q-num">5</span>
+                            <span>Nike no mostró ningún producto en el spot "So Win". ¿Qué revela esto sobre la semiótica publicitaria?</span>
+                        </div>
+                        <div class="quiz-options">
+                            <button class="quiz-opt" data-idx="0"><span class="opt-letter">A</span> Que el producto es irrelevante en la publicidad contemporánea</button>
+                            <button class="quiz-opt" data-idx="1"><span class="opt-letter">B</span> Que los anuncios sin producto son menos efectivos comercialmente</button>
+                            <button class="quiz-opt" data-idx="2"><span class="opt-letter">C</span> Que la "realidad" comunicada es siempre una versión significada que excede al producto concreto</button>
+                            <button class="quiz-opt" data-idx="3"><span class="opt-letter">D</span> Que Nike confía solo en el reconocimiento del logo, sin estrategia semiótica</button>
+                        </div>
+                        <div class="quiz-feedback correct-fb">Correcto. La ausencia de producto demuestra que lo que se vende no es el objeto sino una "realidad significada": valores, emociones, identidades. El producto es secundario frente al sistema de signos que lo reemplaza y lo excede.</div>
+                        <div class="quiz-feedback wrong-fb">Incorrecto. La clave semiótica es que la "realidad" comunicada es siempre una versión significada. Nike no prescinde del producto por error: demuestra que el sistema de signos (valores, emociones, identidades) reemplaza y excede al objeto concreto.</div>
+                    </div>
+                </div>
+
+                <!-- Bloque de resultado -->
+                <div class="score-block" id="score-block">
+                    <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 8px;">Tu resultado</p>
+                    <div class="score-number" id="score-num">0/5</div>
+                    <p id="score-msg" style="margin-top: 10px; font-size: 0.95rem; color: var(--fg);"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════
+             FORMULARIO DE REFLEXIÓN
+             ═══════════════════════════════════════════ -->
+        <section>
+            <div class="container">
+                <div class="accent-line reveal"></div>
+                <h2 class="reveal">Reflexión Crítica</h2>
+                <p class="reveal" style="margin-top: 10px; max-width: 640px;">Responde la siguiente pregunta argumentando tu posición con al menos dos de los autores estudiados.</p>
+
+                <div class="card reveal" style="margin-top: 32px; max-width: 680px;">
+                    <form id="reflexion-form" novalidate>
+                        <div class="form-group">
+                            <label class="form-label" for="f-nombre">Nombres completos <span class="req">*</span></label>
+                            <input class="form-input" type="text" id="f-nombre" placeholder="Ej. María Fernández López" autocomplete="name" required>
+                            <div class="form-error" id="err-nombre">Este campo es obligatorio.</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="f-correo">Correo institucional <span class="req">*</span></label>
+                            <input class="form-input" type="email" id="f-correo" placeholder="Ej. maria.fernandez@utp.edu.pe" autocomplete="email" required>
+                            <div class="form-error" id="err-correo">Ingresa un correo electrónico válido.</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="f-reflexion">Reflexión <span class="req">*</span></label>
+                            <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 8px;">Si el swoosh de Nike fuera vendido a una empresa de seguros mañana, ¿conservaría el mismo poder significante? Argumenta usando al menos dos autores.</p>
+                            <textarea class="form-textarea" id="f-reflexion" placeholder="Escribe tu reflexión aquí..." required></textarea>
+                            <div class="form-error" id="err-reflexion">Tu reflexión debe tener al menos 80 caracteres.</div>
+                        </div>
+                        <button type="submit" class="btn-primary no-print">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l5 5L15 4"/></svg>
+                            Enviar reflexión
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ═══════════════════════════════════════════
+         FOOTER
+         ═══════════════════════════════════════════ -->
+    <footer class="site-footer">
+        <p>Docente: Mg Mario Quiroz | Curso: Semiótica de la Imagen · 2026 · Semana 2</p>
+    </footer>
+
+    <!-- ═══════════════════════════════════════════
+         JAVASCRIPT
+         ═══════════════════════════════════════════ -->
+    <script>
+    (function() {
+        'use strict';
+
+        /* ──────────────────────────────────────
+           TOOLTIP GLOBAL (#g-tip)
+           Se crea UNA SOLA VEZ en el body (ya
+           existe en el HTML). Se posiciona con
+           getBoundingClientRect() para evitar
+           cortes por overflow:hidden.
+           ────────────────────────────────────── */
+        const gTip = document.getElementById('g-tip');
+        const tipTitle = gTip.querySelector('strong');
+        const tipDesc = gTip.querySelector('p');
+        let tipVisible = false;
+
+        function showTip(hotspot) {
+            tipTitle.textContent = hotspot.dataset.title;
+            tipDesc.textContent = hotspot.dataset.desc;
+            gTip.setAttribute('aria-hidden', 'false');
+
+            // Posicionar con getBoundingClientRect (viewport coordinates, compatible con position:fixed)
+            const r = hotspot.getBoundingClientRect();
+            const tipW = 300; // estimación inicial
+            const gap = 14;
+
+            // Posición inicial: a la derecha del hotspot
+            let left = r.right + gap;
+            let top = r.top + r.height / 2;
+
+            // Si se sale por la derecha, poner a la izquierda
+            if (left + tipW > window.innerWidth - 16) {
+                left = r.left - tipW - gap;
+            }
+            // Si aún se sale, centrar debajo
+            if (left < 16) {
+                left = Math.max(16, r.left + r.width / 2 - tipW / 2);
+                top = r.bottom + gap;
+            }
+
+            // Si se sale por abajo, ajustar
+            top = Math.max(16, Math.min(top, window.innerHeight - 200));
+
+            gTip.style.left = left + 'px';
+            gTip.style.top = top + 'px';
+            gTip.classList.add('visible');
+            tipVisible = true;
+
+            // Ajuste fino tras renderizar (tamaño real del tooltip)
+            requestAnimationFrame(function() {
+                const tr = gTip.getBoundingClientRect();
+                if (tr.right > window.innerWidth - 16) {
+                    gTip.style.left = Math.max(16, window.innerWidth - tr.width - 16) + 'px';
+                }
+                if (tr.bottom > window.innerHeight - 16) {
+                    gTip.style.top = Math.max(16, window.innerHeight - tr.height - 16) + 'px';
+                }
+            });
+        }
+
+        function hideTip() {
+            gTip.classList.remove('visible');
+            gTip.setAttribute('aria-hidden', 'true');
+            tipVisible = false;
+        }
+
+        // Asignar eventos a todos los hotspots
+        document.querySelectorAll('.hotspot').forEach(function(h) {
+            h.addEventListener('mouseenter', function() { showTip(h); });
+            h.addEventListener('mouseleave', hideTip);
+            h.addEventListener('focus', function() { showTip(h); });
+            h.addEventListener('blur', hideTip);
+            // Soporte táctil
+            h.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                if (tipVisible && gTip._activeHotspot === h) {
+                    hideTip();
+                    gTip._activeHotspot = null;
+                } else {
+                    hideTip();
+                    showTip(h);
+                    gTip._activeHotspot = h;
+                }
+            }, { passive: false });
+        });
+
+        // Cerrar tooltip al tocar fuera
+        document.addEventListener('touchstart', function(e) {
+            if (tipVisible && !e.target.closest('.hotspot') && !e.target.closest('#g-tip')) {
+                hideTip();
+                gTip._activeHotspot = null;
+            }
+        }, { passive: true });
+
+
+        /* ──────────────────────────────────────
+           SCROLL REVEAL (IntersectionObserver)
+           ────────────────────────────────────── */
+        var reveals = document.querySelectorAll('.reveal');
+        var revealObs = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        reveals.forEach(function(el) { revealObs.observe(el); });
+
+
+        /* ──────────────────────────────────────
+           GRÁFICO DE BARRAS (animación al scroll)
+           ────────────────────────────────────── */
+        var chartArea = document.getElementById('chart-area');
+        var chartAnimated = false;
+        var chartObs = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting && !chartAnimated) {
+                    chartAnimated = true;
+                    document.querySelectorAll('.chart-bar').forEach(function(bar) {
+                        bar.style.width = bar.dataset.width;
+                    });
+                    chartObs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+        chartObs.observe(chartArea);
+
+
+        /* ──────────────────────────────────────
+           CUESTIONARIO
+           ────────────────────────────────────── */
+        var quizContainer = document.getElementById('quiz-container');
+        var questions = quizContainer.querySelectorAll('.quiz-question');
+        var totalQ = questions.length;
+        var answered = 0;
+        var score = 0;
+
+        questions.forEach(function(q) {
+            var correctIdx = parseInt(q.dataset.correct, 10);
+            var opts = q.querySelectorAll('.quiz-opt');
+            var feedbackCorrect = q.querySelector('.correct-fb');
+            var feedbackWrong = q.querySelector('.wrong-fb');
+
+            opts.forEach(function(opt) {
+                opt.addEventListener('click', function() {
+                    if (q.classList.contains('answered-correct') || q.classList.contains('answered-wrong')) return;
+
+                    var idx = parseInt(opt.dataset.idx, 10);
+                    var isCorrect = idx === correctIdx;
+
+                    // Deshabilitar todas las opciones
+                    opts.forEach(function(o) { o.disabled = true; });
+
+                    // Marcar la seleccionada
+                    opt.classList.add(isCorrect ? 'correct' : 'wrong');
+
+                    // Si no es correcta, mostrar cuál era la correcta
+                    if (!isCorrect) {
+                        opts[correctIdx].classList.add('correct');
+                    }
+
+                    // Feedback
+                    if (isCorrect) {
+                        feedbackCorrect.classList.add('show');
+                        q.classList.add('answered-correct');
+                        score++;
+                    } else {
+                        feedbackWrong.classList.add('show');
+                        q.classList.add('answered-wrong');
+                    }
+
+                    // Contar y mostrar resultado
+                    answered++;
+                    if (answered === totalQ) {
+                        showScore();
+                    }
+                });
+            });
+        });
+
+        function showScore() {
+            var block = document.getElementById('score-block');
+            var num = document.getElementById('score-num');
+            var msg = document.getElementById('score-msg');
+            num.textContent = score + '/' + totalQ;
+
+            if (score === totalQ) {
+                msg.textContent = 'Excelente. Dominas los conceptos clave de los cuatro autores y su aplicación al caso Nike.';
+            } else if (score >= 3) {
+                msg.textContent = 'Buen desempeño. Revisa los conceptos donde fallaste para fortalecer tu comprensión.';
+            } else {
+                msg.textContent = 'Necesitas repasar el marco teórico. Relee las tarjetas de los autores y vuelve a intentarlo.';
+            }
+
+            block.classList.add('show');
+            block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+
+        /* ──────────────────────────────────────
+           FORMULARIO DE REFLEXIÓN
+           ────────────────────────────────────── */
+        var form = document.getElementById('reflexion-form');
+        var fNombre = document.getElementById('f-nombre');
+        var fCorreo = document.getElementById('f-correo');
+        var fReflexion = document.getElementById('f-reflexion');
+
+        function setError(input, errId, show) {
+            var errEl = document.getElementById(errId);
+            if (show) {
+                input.classList.add('error');
+                errEl.classList.add('show');
+            } else {
+                input.classList.remove('error');
+                errEl.classList.remove('show');
+            }
+        }
+
+        // Limpiar errores al escribir
+        fNombre.addEventListener('input', function() { setError(fNombre, 'err-nombre', false); });
+        fCorreo.addEventListener('input', function() { setError(fCorreo, 'err-correo', false); });
+        fReflexion.addEventListener('input', function() { setError(fReflexion, 'err-reflexion', false); });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var valid = true;
+            var nombre = fNombre.value.trim();
+            var correo = fCorreo.value.trim();
+            var reflexion = fReflexion.value.trim();
+
+            // Validar nombre
+            if (nombre.length < 2) {
+                setError(fNombre, 'err-nombre', true);
+                valid = false;
+            }
+
+            // Validar correo
+            var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(correo)) {
+                setError(fCorreo, 'err-correo', true);
+                valid = false;
+            }
+
+            // Validar reflexión
+            if (reflexion.length < 80) {
+                setError(fReflexion, 'err-reflexion', true);
+                valid = false;
+            }
+
+            if (!valid) return;
+
+            // Simular envío: preparar mailto
+            var subject = encodeURIComponent('Reflexión Semiótica - ' + nombre);
+            var body = encodeURIComponent(
+                'Nombres: ' + nombre + '\n' +
+                'Correo: ' + correo + '\n\n' +
+                'Reflexión:\n' + reflexion
+            );
+            var mailtoUrl = 'mailto:c12139@utp.edu.pe?subject=' + subject + '&body=' + body;
+
+            // Crear enlace temporal para mailto
+            var a = document.createElement('a');
+            a.href = mailtoUrl;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+
+            // Mostrar toast
+            showToast('Reflexión preparada. Se abrirá tu cliente de correo.');
+
+            // Abrir mailto tras un breve delay
+            setTimeout(function() {
+                a.click();
+                document.body.removeChild(a);
+            }, 600);
+
+            // Limpiar formulario
+            form.reset();
+        });
+
+
+        /* ──────────────────────────────────────
+           TOAST
+           ────────────────────────────────────── */
+        var toastEl = document.getElementById('toast');
+        var toastMsg = document.getElementById('toast-msg');
+        var toastTimer = null;
+
+        function showToast(msg) {
+            toastMsg.textContent = msg;
+            toastEl.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function() {
+                toastEl.classList.remove('show');
+            }, 4000);
+        }
+
+    })();
+    </script>
+</body>
+</html>
